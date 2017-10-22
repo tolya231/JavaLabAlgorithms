@@ -1,11 +1,17 @@
 package com.epam.graph;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-public class Graph implements Graphs {
+@ToString
+@EqualsAndHashCode
+public class Graph {
 
   private List<Set<Integer>> vertices;
 
@@ -13,14 +19,23 @@ public class Graph implements Graphs {
     this.vertices = new ArrayList<>();
   }
 
+  public Graph(int capacity) {
+    this.vertices = new ArrayList<>(capacity);
+    for (int i = 0; i < capacity; i++) {
+      vertices.add(null);
+    }
+  }
+
   public Graph(List<Set<Integer>> vertices) {
     this.vertices = vertices;
   }
 
-  @Override
   public boolean addVertex(Integer vertex) {
+    if (!checkVertex(vertex)) {
+      return false;
+    }
     if (vertices.get(vertex) != null) {
-      System.out.println("Vertex already exists");
+      System.out.println("Vertex already exist");
       return false;
     } else {
       vertices.set(vertex, new TreeSet<>());
@@ -28,38 +43,38 @@ public class Graph implements Graphs {
     }
   }
 
-  @Override
   public void deleteVertex(Integer vertex) {
     if (checkVertex(vertex)) {
-      vertices.remove((int) vertex);
-      for (Set<Integer> set : vertices) {
-        set.removeIf(vert -> vert.equals(vertex));
+      if (vertices.get(vertex) == null) {
+        System.out.println("No such vertex");
+      } else {
+        vertices.set(vertex, null);
+        for (Set<Integer> set : vertices) {
+          if (set != null) {
+            set.removeIf(vert -> vert.equals(vertex));
+          }
+        }
       }
     }
   }
 
-  @Override
-  public boolean addEdge(Edge edge) {
-    if (checkEdge(edge)) {
+  public void addEdge(Edge edge) {
+    if (checkEdge(edge) && checkVertex(edge.getV1()) && checkVertex(edge.getV2())) {
       Set<Integer> v1 = vertices.get(edge.getV1());
       Set<Integer> v2 = vertices.get(edge.getV2());
       if (v1 != null && v2 != null) {
         v1.add(edge.getV2());
         v2.add(edge.getV1());
-        return true;
       } else {
         System.out.println("vertices in edge not found");
       }
     } else {
       System.out.println("Incorrect edge");
     }
-    return false;
   }
 
-
-  @Override
   public void deleteEdge(Edge edge) {
-    if (checkEdge(edge)) {
+    if (checkEdge(edge) && Math.max(edge.getV1(), edge.getV2()) < vertices.size()) {
       Set<Integer> v1 = vertices.get(edge.getV1());
       Set<Integer> v2 = vertices.get(edge.getV2());
       if (v1 != null && v2 != null) {
@@ -78,33 +93,51 @@ public class Graph implements Graphs {
     }
   }
 
-  @Override
   public Integer verticesCount() {
-    return vertices.size();
+    return Integer
+        .valueOf(Long.valueOf(vertices.stream().filter(Objects::nonNull).count()).toString());
   }
 
-  @Override
   public Integer edgesCount() {
     int result = 0;
     for (Set<Integer> vertex : vertices) {
-      result += vertex.size();
+      if (vertex != null) {
+        result += vertex.size();
+      }
     }
     return result / 2;
   }
 
-  @Override
   public Integer degree(Integer vertex) {
-    return checkVertex(vertex) ? vertices.get(vertex).size() : null;
+    if (checkVertex(vertex) && vertices.get(vertex) != null) {
+      return vertices.get(vertex).size();
+    } else {
+      return null;
+    }
   }
 
-  @Override
   public List<Integer> findAdj(Integer vertex) {
-    return checkVertex(vertex) ? new ArrayList<>(vertices.get(vertex)) : null;
+    if (checkVertex(vertex)) {
+      return vertices.get(vertex) != null ? new ArrayList<>(vertices.get(vertex)) : null;
+    } else {
+      return null;
+    }
   }
 
-  @Override
   public List<Integer> findPath(Integer vertex1, Integer vertex2) {
-    return null;
+    if (checkVertex(vertex1) && checkVertex(vertex2)) {
+      boolean[] colors = new boolean[vertices.size()];
+      List<Integer> path = new LinkedList<>();
+      path.add(vertex1);
+      if (dfs(vertex1, vertex2, path, colors)) {
+        return path;
+      } else {
+//        System.out.println("No path");
+        return null;
+      }
+    } else {
+      return null;
+    }
   }
 
   private boolean checkEdge(Edge edge) {
@@ -113,10 +146,47 @@ public class Graph implements Graphs {
   }
 
   private boolean checkVertex(Integer vertex) {
-    if (vertices.get(vertex) == null) {
-      System.out.println("Vertex not found");
+    if (vertex == null || vertex < 0) {
+      System.out.println("Not vertex");
       return false;
     }
+    if (vertex >= vertices.size()) {
+      increaseCapacity(vertex);
+    }
     return true;
+  }
+
+  //How to improve?
+  private void increaseCapacity(Integer vertex) {
+    Integer max = vertex > vertices.size() * 2 ? vertex + 1 : vertices.size() * 2;
+    ArrayList<Set<Integer>> newVertices = new ArrayList<>(max);
+    for (int i = 0; i < max; i++) {
+      newVertices.add(null);
+    }
+    for (int i = 0; i < vertices.size(); i++) {
+      newVertices.set(i, vertices.get(i));
+    }
+    vertices = newVertices;
+  }
+
+  private boolean dfs(Integer vertex1, Integer vertex2, List<Integer> path, boolean[] colors) {
+    colors[vertex1] = true;
+    for (Integer w : findAdj(vertex1)) {
+      if (!colors[w]) {
+        if (w.equals(vertex2)) {
+          path.add(vertex2);
+          return true;
+        } else {
+          path.add(w);
+          boolean hasWay = dfs(w, vertex2, path, colors);
+          if (hasWay) {
+            return true;
+          }
+          path.remove(w);
+          colors[w] = false;
+        }
+      }
+    }
+    return false;
   }
 }
