@@ -164,5 +164,10 @@ public class GraphTest {
     System.out.println(graph.findPath(1, 5));
     System.out.println(graph.findPath(2, 5));
     System.out.println(graph.findPath(4, 5));
+
+    graph.addVertex(6);
+    graph.addVertex(7);
+    graph.addEdge(new Edge(6, 7));
+    System.out.println(graph.findPath(6, 1));
   }
 }

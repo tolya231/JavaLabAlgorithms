@@ -30,16 +30,14 @@ public class Graph {
     this.vertices = vertices;
   }
 
-  public boolean addVertex(Integer vertex) {
+  public void addVertex(Integer vertex) {
     if (!checkVertex(vertex)) {
-      return false;
+      return;
     }
     if (vertices.get(vertex) != null) {
       System.out.println("Vertex already exist");
-      return false;
     } else {
       vertices.set(vertex, new TreeSet<>());
-      return true;
     }
   }
 
@@ -51,7 +49,7 @@ public class Graph {
         vertices.set(vertex, null);
         for (Set<Integer> set : vertices) {
           if (set != null) {
-            set.removeIf(vert -> vert.equals(vertex));
+            set.remove(vertex);
           }
         }
       }
